@@ -1,0 +1,392 @@
+{
+  "name": "shit",
+  "blocks": [
+    {
+      "x": -56,
+      "y": 1,
+      "z": -16,
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "color": 16277892
+    },
+    {
+      "x": -55,
+      "y": 1,
+      "z": -14,
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "color": 899
+    },
+    {
+      "x": -55,
+      "y": 1,
+      "z": -12,
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "color": 16608085
+    },
+    {
+      "x": -51,
+      "y": 3,
+      "z": -10,
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "color": 12396880
+    },
+    {
+      "x": -47,
+      "y": 1,
+      "z": -8,
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "color": 12123754
+    },
+    {
+      "x": -47,
+      "y": 1,
+      "z": -8,
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "color": 5732581
+    },
+    {
+      "x": -47,
+      "y": 3,
+      "z": -8,
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "color": 13071963
+    },
+    {
+      "x": -47,
+      "y": 3,
+      "z": -8,
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "color": 13860694
+    },
+    {
+      "x": -47,
+      "y": 1,
+      "z": -8,
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "color": 4158965
+    },
+    {
+      "x": -47,
+      "y": 3,
+      "z": -8,
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "color": 2478102
+    },
+    {
+      "x": -47,
+      "y": 1,
+      "z": -8,
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "color": 649925
+    },
+    {
+      "x": -47,
+      "y": 3,
+      "z": -8,
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "color": 7797485
+    },
+    {
+      "x": -47,
+      "y": 1,
+      "z": -8,
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "color": 12957334
+    },
+    {
+      "x": -47,
+      "y": 3,
+      "z": -8,
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "color": 11361840
+    },
+    {
+      "x": -44,
+      "y": 1,
+      "z": -8,
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "color": 15184394
+    },
+    {
+      "x": -41,
+      "y": 1,
+      "z": -8,
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "color": 2444494
+    },
+    {
+      "x": -38,
+      "y": 1,
+      "z": -11,
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "color": 9047595
+    },
+    {
+      "x": -35,
+      "y": 3,
+      "z": -13,
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "color": 15133541
+    },
+    {
+      "x": -32,
+      "y": 1,
+      "z": -13,
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "color": 12602349
+    },
+    {
+      "x": -29,
+      "y": 1,
+      "z": -9,
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "color": 11098915
+    },
+    {
+      "x": -30,
+      "y": 3,
+      "z": -6,
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "color": 4266133
+    },
+    {
+      "x": -28,
+      "y": 1,
+      "z": -3,
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "color": 12495446
+    },
+    {
+      "x": -27,
+      "y": 1,
+      "z": -6,
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "color": 13621460
+    },
+    {
+      "x": -28,
+      "y": 2,
+      "z": -8,
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "color": 572715
+    },
+    {
+      "x": -28,
+      "y": 2,
+      "z": -10,
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "color": 16697840
+    },
+    {
+      "x": -28,
+      "y": 1,
+      "z": -16,
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "color": 2604824
+    },
+    {
+      "x": -30,
+      "y": 1,
+      "z": -20,
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "color": 12680214
+    },
+    {
+      "x": -35,
+      "y": 1,
+      "z": -20,
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "color": 8236785
+    },
+    {
+      "x": -38,
+      "y": 3,
+      "z": -19,
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "color": 10373593
+    },
+    {
+      "x": -41,
+      "y": 1,
+      "z": -17,
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "color": 13641870
+    },
+    {
+      "x": -43,
+      "y": 3,
+      "z": -14,
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "color": 2256697
+    },
+    {
+      "x": -45,
+      "y": 2,
+      "z": -11,
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "color": 16114331
+    },
+    {
+      "x": -47,
+      "y": 1,
+      "z": -9,
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "color": 5334031
+    },
+    {
+      "x": -48,
+      "y": 3,
+      "z": -9,
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "color": 1493787
+    },
+    {
+      "x": -56,
+      "y": 1,
+      "z": -17,
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "color": 8291572
+    },
+    {
+      "x": -55,
+      "y": 1,
+      "z": -18,
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "color": 5725528
+    },
+    {
+      "x": -55,
+      "y": 1,
+      "z": -18,
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "color": 1476064
+    },
+    {
+      "x": -55,
+      "y": 1,
+      "z": -18,
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "color": 2468071
+    },
+    {
+      "x": -55,
+      "y": 1,
+      "z": -18,
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "color": 9574317
+    },
+    {
+      "x": -55,
+      "y": 1,
+      "z": -18,
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "color": 2722077
+    },
+    {
+      "x": -55,
+      "y": 1,
+      "z": -18,
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "color": 11023782
+    },
+    {
+      "x": -53,
+      "y": 1,
+      "z": -17,
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "color": 8840245
+    },
+    {
+      "x": -53,
+      "y": 1,
+      "z": -17,
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "color": 8061000
+    }
+  ]
+}
