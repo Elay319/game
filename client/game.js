@@ -532,7 +532,66 @@ publishButton.onclick = () => {
   publishCurrentGame();
 
 };
+// HIDE BUTTON
 
+const hideButton =
+  document.createElement('button');
+
+hideButton.innerText = 'HIDE';
+
+hideButton.style.position =
+  'absolute';
+
+hideButton.style.left = '210px';
+
+hideButton.style.top =
+  y + 'px';
+
+hideButton.style.width = '90px';
+
+hideButton.style.height = '50px';
+
+hideButton.style.borderRadius =
+  '15px';
+
+hideButton.style.border = 'none';
+
+document.body.appendChild(
+  hideButton
+);
+
+// CLICK
+
+hideButton.onclick = async () => {
+
+  await fetch(
+
+    'https://game-euks.onrender.com/hide-game',
+
+    {
+
+      method: 'POST',
+
+      headers: {
+
+        'Content-Type':
+          'application/json'
+
+      },
+
+      body: JSON.stringify({
+
+        name: game.name
+
+      })
+
+    }
+
+  );
+
+  loadServerGames();
+
+};
 // MENU
 
 const menu = document.createElement('div');
