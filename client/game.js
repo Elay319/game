@@ -2,7 +2,7 @@
 // MULTIPLAYER
 // ========================================
 
-const socket = io('http://10.100.102.122:3000');
+const socket = io('http://https://game-euks.onrender.com');
 const socket = io('https://game-euks.onrender.com');
 
 const otherPlayers = {};
@@ -20,7 +20,7 @@ method: 'POST',
 async function loadServerGames() {
 
 const response = await fetch(
-    'http://10.100.102.122:3000/games'
+    'http://https://game-euks.onrender.com/games'
     'https://game-euks.onrender.com/games'
 );
 
