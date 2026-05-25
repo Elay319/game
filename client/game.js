@@ -278,6 +278,103 @@ if (username) {
 
 makeButton("PUBLISH", innerWidth - 140, 20, 120, 55).onclick = publishCurrentGame;
 makeButton("VIEW", innerWidth - 140, 85, 120, 55).onclick = () => firstPerson = !firstPerson;
+// PHONE CONTROLS
+
+let moveForward = false;
+let moveBackward = false;
+let moveLeft = false;
+let moveRight = false;
+
+function mobileButton(text, left, bottom) {
+
+  const btn = document.createElement("button");
+
+  btn.innerText = text;
+
+  btn.style.position = "absolute";
+  btn.style.left = left + "px";
+  btn.style.bottom = bottom + "px";
+
+  btn.style.width = "85px";
+  btn.style.height = "85px";
+
+  btn.style.borderRadius = "20px";
+  btn.style.border = "none";
+
+  btn.style.fontSize = "30px";
+
+  btn.style.opacity = "0.7";
+
+  btn.style.zIndex = "100";
+
+  document.body.appendChild(btn);
+
+  return btn;
+
+}
+
+// UP
+
+const upBtn = mobileButton("▲", 120, 140);
+
+upBtn.addEventListener("touchstart", e => {
+  e.preventDefault();
+  moveForward = true;
+});
+
+upBtn.addEventListener("touchend", () => {
+  moveForward = false;
+});
+
+// DOWN
+
+const downBtn = mobileButton("▼", 120, 30);
+
+downBtn.addEventListener("touchstart", e => {
+  e.preventDefault();
+  moveBackward = true;
+});
+
+downBtn.addEventListener("touchend", () => {
+  moveBackward = false;
+});
+
+// LEFT
+
+const leftBtn = mobileButton("◀", 20, 85);
+
+leftBtn.addEventListener("touchstart", e => {
+  e.preventDefault();
+  moveLeft = true;
+});
+
+leftBtn.addEventListener("touchend", () => {
+  moveLeft = false;
+});
+
+// RIGHT
+
+const rightBtn = mobileButton("▶", 220, 85);
+
+rightBtn.addEventListener("touchstart", e => {
+  e.preventDefault();
+  moveRight = true;
+});
+
+rightBtn.addEventListener("touchend", () => {
+  moveRight = false;
+});
+
+// JUMP
+
+const jumpBtn = mobileButton("⬆️", window.innerWidth - 120, 60);
+
+jumpBtn.style.borderRadius = "50%";
+
+jumpBtn.addEventListener("touchstart", e => {
+  e.preventDefault();
+  jump();
+});
 
 async function publishCurrentGame() {
   const name = prompt("Game name?");
