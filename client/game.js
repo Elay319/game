@@ -1,636 +1,1239 @@
+// ========================================
+// CONFIG
+// ========================================
+
 const API = "https://game-euks.onrender.com";
 
 const socket = io(API);
 
-let username = localStorage.getItem("username") || "";
-let avatarColor = Number(localStorage.getItem("avatarColor")) || 0x0066ff;
+// ========================================
+// ACCOUNT
+// ========================================
 
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x87ceeb);
+let username =
+  localStorage.getItem("username") ||
+  "";
 
-const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize(innerWidth, innerHeight);
-document.body.appendChild(renderer.domElement);
+let avatarColor =
+  Number(
+    localStorage.getItem(
+      "avatarColor"
+    )
+  ) || 0x0066ff;
 
-scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+// ========================================
+// SCENE
+// ========================================
 
-const sun = new THREE.DirectionalLight(0xffffff, 1);
-sun.position.set(10, 20, 10);
-scene.add(sun);
+const scene =
+  new THREE.Scene();
 
-const ground = new THREE.Mesh(
-  new THREE.PlaneGeometry(200, 200),
-  new THREE.MeshStandardMaterial({ color: 0x55aa55 })
-);
-ground.rotation.x = -Math.PI / 2;
-scene.add(ground);
+scene.background =
+  new THREE.Color(0x87ceeb);
 
-const player = new THREE.Mesh(
-  new THREE.BoxGeometry(1, 2, 1),
-  new THREE.MeshStandardMaterial({ color: avatarColor })
-);
-player.position.set(0, 1, 0);
-scene.add(player);
+const camera =
+  new THREE.PerspectiveCamera(
 
-const collidableObjects = [];
-const otherPlayers = {};
+    75,
 
-let currentGame = "sandbox";
-let firstPerson = false;
-let yaw = 0;
-let pitch = 0;
-let velocityY = 0;
-let isGrounded = true;
+    window.innerWidth /
+    window.innerHeight,
 
-const keys = {};
-const gravity = 0.015;
-const jumpPower = 0.28;
-const cameraDistance = 8;
+    0.1,
 
-document.addEventListener("contextmenu", e => e.preventDefault());
+    1000
 
-document.addEventListener("keydown", e => {
-  keys[e.key.toLowerCase()] = true;
-  if (e.code === "Space") {
-    e.preventDefault();
-    jump();
-  }
-  if (e.key.toLowerCase() === "k") firstPerson = !firstPerson;
-});
-
-document.addEventListener("keyup", e => {
-  keys[e.key.toLowerCase()] = false;
-});
-
-function jump() {
-  if (isGrounded) {
-    velocityY = jumpPower;
-    isGrounded = false;
-  }
-}
-
-renderer.domElement.addEventListener("click", () => {
-  renderer.domElement.requestPointerLock();
-});
-
-document.addEventListener("mousemove", e => {
-  if (document.pointerLockElement !== renderer.domElement) return;
-  yaw -= e.movementX * 0.003;
-  pitch -= e.movementY * 0.003;
-  pitch = Math.max(-1.4, Math.min(1.4, pitch));
-});
-
-function createBlock(x, y, z, color, w = 1, h = 1, d = 1) {
-  const block = new THREE.Mesh(
-    new THREE.BoxGeometry(w, h, d),
-    new THREE.MeshStandardMaterial({ color })
   );
 
-  block.position.set(x, y, z);
-  scene.add(block);
-  return block;
-}
+const renderer =
+  new THREE.WebGLRenderer({
 
-function clearWorld() {
-  const remove = [];
+    antialias: true
 
-  scene.traverse(obj => {
-    if (
-      obj !== player &&
-      obj !== ground &&
-      !(obj instanceof THREE.Camera) &&
-      !(obj instanceof THREE.Light)
-    ) {
-      remove.push(obj);
-    }
   });
 
-  remove.forEach(obj => scene.remove(obj));
-  collidableObjects.length = 0;
-}
+renderer.setSize(
+  window.innerWidth,
+  window.innerHeight
+);
 
-function loadGame(game) {
-  clearWorld();
+document.body.appendChild(
+  renderer.domElement
+);
 
-  if (game === "sandbox") {
-    player.position.set(0, 1, 0);
-  }
+// ========================================
+// LIGHTS
+// ========================================
 
-  if (game === "obby") {
-    const start = createBlock(0, 0, 8, 0x00ff00, 6, 1, 6);
-    collidableObjects.push(start);
-    player.position.set(0, 3, 8);
+scene.add(
 
-    for (let i = 0; i < 15; i++) {
-      collidableObjects.push(
-        createBlock(i * 5, Math.random() * 3, -i * 4, 0xff0000, 3, 1, 3)
-      );
-    }
-  }
+  new THREE.AmbientLight(
+    0xffffff,
+    0.5
+  )
 
-  if (game === "race") {
-    player.position.set(0, 2, 5);
+);
 
-    for (let i = 0; i < 40; i++) {
-      collidableObjects.push(createBlock(0, 0, -i * 5, 0x333333, 5, 1, 5));
-    }
-  }
-}
+const sun =
+  new THREE.DirectionalLight(
+    0xffffff,
+    1
+  );
 
-function makeButton(text, x, y, w, h) {
-  const btn = document.createElement("button");
-  btn.innerText = text;
-  btn.style.position = "absolute";
-  btn.style.left = x + "px";
-  btn.style.top = y + "px";
-  btn.style.width = w + "px";
-  btn.style.height = h + "px";
-  btn.style.borderRadius = "14px";
-  btn.style.border = "none";
-  btn.style.fontSize = "18px";
-  btn.style.zIndex = 50;
-  document.body.appendChild(btn);
-  return btn;
-}
+sun.position.set(10,20,10);
 
-const loginBox = document.createElement("div");
-loginBox.style.position = "absolute";
-loginBox.style.top = "50%";
-loginBox.style.left = "50%";
-loginBox.style.transform = "translate(-50%, -50%)";
-loginBox.style.background = "rgba(0,0,0,0.85)";
-loginBox.style.color = "white";
-loginBox.style.padding = "25px";
-loginBox.style.borderRadius = "20px";
-loginBox.style.fontFamily = "Arial";
-loginBox.style.textAlign = "center";
-loginBox.style.zIndex = 100;
+scene.add(sun);
 
-loginBox.innerHTML = `
-<h1>My Platform</h1>
-<input id="userInput" placeholder="username"><br><br>
-<input id="passInput" placeholder="password" type="password"><br><br>
-<button id="loginBtn">Login</button>
-<button id="registerBtn">Register</button>
-<br><br>
-<button id="skipBtn">Play Guest</button>
-`;
+// ========================================
+// GROUND
+// ========================================
 
-document.body.appendChild(loginBox);
+const ground =
+  new THREE.Mesh(
 
-function closeLogin() {
-  loginBox.style.display = "none";
-  showMainMenu();
-}
+    new THREE.PlaneGeometry(
+      200,
+      200
+    ),
 
-document.getElementById("skipBtn").onclick = () => {
-  username = "Guest" + Math.floor(Math.random() * 9999);
-  closeLogin();
-};
+    new THREE.MeshStandardMaterial({
 
-document.getElementById("registerBtn").onclick = async () => {
-  const user = document.getElementById("userInput").value;
-  const pass = document.getElementById("passInput").value;
+      color: 0x55aa55
 
-  const res = await fetch(API + "/register", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username: user, password: pass })
-  });
+    })
 
-  alert(await res.text());
-};
+  );
 
-document.getElementById("loginBtn").onclick = async () => {
-  const user = document.getElementById("userInput").value;
-  const pass = document.getElementById("passInput").value;
+ground.rotation.x =
+  -Math.PI / 2;
 
-  const res = await fetch(API + "/login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username: user, password: pass })
-  });
+scene.add(ground);
 
-  if (res.ok) {
-    username = user;
-    localStorage.setItem("username", username);
-    closeLogin();
-  } else {
-    alert(await res.text());
-  }
-};
+// ========================================
+// PLAYER
+// ========================================
 
-function showMainMenu() {
-  const menu = document.createElement("div");
-  menu.style.position = "absolute";
-  menu.style.top = "50%";
-  menu.style.left = "50%";
-  menu.style.transform = "translate(-50%, -50%)";
-  menu.style.background = "rgba(0,0,0,0.85)";
-  menu.style.color = "white";
-  menu.style.padding = "30px";
-  menu.style.borderRadius = "20px";
-  menu.style.fontFamily = "Arial";
-  menu.style.textAlign = "center";
-  menu.style.zIndex = 70;
+const player =
+  new THREE.Mesh(
 
-  menu.innerHTML = `
-  <h1>Games</h1>
-  <button id="blueAvatar">Blue</button>
-  <button id="greenAvatar">Green</button>
-  <button id="redAvatar">Red</button>
-  <br><br>
-  <button id="sandboxBtn">Sandbox</button>
-  <button id="obbyBtn">Obby</button>
-  <button id="raceBtn">Race</button>
-  <br><br>
-  <button id="playBtn">PLAY</button>
-  `;
+    new THREE.BoxGeometry(
+      1,
+      2,
+      1
+    ),
 
-  document.body.appendChild(menu);
+    new THREE.MeshStandardMaterial({
 
-  document.getElementById("blueAvatar").onclick = () => setAvatar(0x0066ff);
-  document.getElementById("greenAvatar").onclick = () => setAvatar(0x00ff00);
-  document.getElementById("redAvatar").onclick = () => setAvatar(0xff0000);
+      color: avatarColor
 
-  document.getElementById("sandboxBtn").onclick = () => currentGame = "sandbox";
-  document.getElementById("obbyBtn").onclick = () => currentGame = "obby";
-  document.getElementById("raceBtn").onclick = () => currentGame = "race";
+    })
 
-  document.getElementById("playBtn").onclick = () => {
-    menu.remove();
-    loadGame(currentGame);
-  };
-}
+  );
 
-function setAvatar(color) {
-  avatarColor = color;
-  player.material.color.set(color);
-  localStorage.setItem("avatarColor", String(color));
-  socket.emit("avatar", { color, username });
-}
+player.position.set(0,1,0);
 
-if (username) {
-  loginBox.style.display = "none";
-  showMainMenu();
-}
+scene.add(player);
 
-makeButton("PUBLISH", innerWidth - 140, 20, 120, 55).onclick = publishCurrentGame;
-makeButton("VIEW", innerWidth - 140, 85, 120, 55).onclick = () => firstPerson = !firstPerson;
-// PHONE CONTROLS
+// ========================================
+// OTHER PLAYERS
+// ========================================
+
+const otherPlayers = {};
+
+// ========================================
+// VARIABLES
+// ========================================
+
+const collidableObjects = [];
+
+let currentGame =
+  "sandbox";
+
+let firstPerson =
+  false;
+
+let yaw = 0;
+let pitch = 0;
+
+let velocityY = 0;
+
+let isGrounded = true;
+
+const gravity = 0.015;
+
+const jumpPower = 0.28;
+
+const cameraDistance = 8;
+
+const keys = {};
+
+// ========================================
+// MOBILE
+// ========================================
 
 let moveForward = false;
 let moveBackward = false;
 let moveLeft = false;
 let moveRight = false;
 
-function mobileButton(text, left, bottom) {
+// ========================================
+// INPUT
+// ========================================
 
-  const btn = document.createElement("button");
+document.addEventListener(
+  "contextmenu",
+  e => e.preventDefault()
+);
 
-  btn.innerText = text;
+document.addEventListener(
+  "keydown",
+  e => {
 
-  btn.style.position = "absolute";
-  btn.style.left = left + "px";
-  btn.style.bottom = bottom + "px";
+    keys[
+      e.key.toLowerCase()
+    ] = true;
 
-  btn.style.width = "85px";
-  btn.style.height = "85px";
+    if(
+      e.code === "Space"
+    ) {
 
-  btn.style.borderRadius = "20px";
-  btn.style.border = "none";
+      e.preventDefault();
 
-  btn.style.fontSize = "30px";
+      jump();
 
-  btn.style.opacity = "0.7";
+    }
 
-  btn.style.zIndex = "100";
+    if(
+      e.key.toLowerCase() === "k"
+    ) {
 
-  document.body.appendChild(btn);
+      firstPerson =
+        !firstPerson;
+
+    }
+
+  }
+);
+
+document.addEventListener(
+  "keyup",
+  e => {
+
+    keys[
+      e.key.toLowerCase()
+    ] = false;
+
+  }
+);
+
+// ========================================
+// JUMP
+// ========================================
+
+function jump() {
+
+  if(isGrounded) {
+
+    velocityY =
+      jumpPower;
+
+    isGrounded =
+      false;
+
+  }
+
+}
+
+// ========================================
+// POINTER LOCK
+// ========================================
+
+renderer.domElement
+.addEventListener(
+  "click",
+  () => {
+
+    renderer.domElement
+    .requestPointerLock();
+
+  }
+);
+
+// ========================================
+// CAMERA ROTATION
+// ========================================
+
+document.addEventListener(
+  "mousemove",
+  e => {
+
+    if(
+      document.pointerLockElement !==
+      renderer.domElement
+    ) return;
+
+    yaw -=
+      e.movementX * 0.003;
+
+    pitch -=
+      e.movementY * 0.003;
+
+    pitch = Math.max(
+
+      -1.4,
+
+      Math.min(
+        1.4,
+        pitch
+      )
+
+    );
+
+  }
+);
+
+// ========================================
+// MOBILE LOOK
+// ========================================
+
+let lastTouchX = 0;
+let lastTouchY = 0;
+
+document.addEventListener(
+  "touchstart",
+  e => {
+
+    lastTouchX =
+      e.touches[0].clientX;
+
+    lastTouchY =
+      e.touches[0].clientY;
+
+  }
+);
+
+document.addEventListener(
+  "touchmove",
+  e => {
+
+    const touch =
+      e.touches[0];
+
+    const dx =
+      touch.clientX -
+      lastTouchX;
+
+    const dy =
+      touch.clientY -
+      lastTouchY;
+
+    if(
+      touch.clientX >
+      window.innerWidth / 2
+    ) {
+
+      yaw -= dx * 0.01;
+
+      pitch -= dy * 0.01;
+
+    }
+
+    lastTouchX =
+      touch.clientX;
+
+    lastTouchY =
+      touch.clientY;
+
+  }
+);
+
+// ========================================
+// MOBILE BUTTONS
+// ========================================
+
+function mobileButton(
+  text,
+  left,
+  bottom
+) {
+
+  const btn =
+    document.createElement(
+      "button"
+    );
+
+  btn.innerText =
+    text;
+
+  btn.style.position =
+    "absolute";
+
+  btn.style.left =
+    left + "px";
+
+  btn.style.bottom =
+    bottom + "px";
+
+  btn.style.width =
+    "85px";
+
+  btn.style.height =
+    "85px";
+
+  btn.style.borderRadius =
+    "20px";
+
+  btn.style.border =
+    "none";
+
+  btn.style.fontSize =
+    "30px";
+
+  btn.style.opacity =
+    "0.7";
+
+  btn.style.zIndex =
+    "100";
+
+  document.body.appendChild(
+    btn
+  );
 
   return btn;
 
 }
 
-// UP
+const upBtn =
+  mobileButton(
+    "▲",
+    120,
+    140
+  );
 
-const upBtn = mobileButton("▲", 120, 140);
+upBtn.addEventListener(
+  "touchstart",
+  e => {
 
-upBtn.addEventListener("touchstart", e => {
-  e.preventDefault();
-  moveForward = true;
-});
+    e.preventDefault();
 
-upBtn.addEventListener("touchend", () => {
-  moveForward = false;
-});
+    moveForward = true;
 
-// DOWN
-
-const downBtn = mobileButton("▼", 120, 30);
-
-downBtn.addEventListener("touchstart", e => {
-  e.preventDefault();
-  moveBackward = true;
-});
-
-downBtn.addEventListener("touchend", () => {
-  moveBackward = false;
-});
-
-// LEFT
-
-const leftBtn = mobileButton("◀", 20, 85);
-
-leftBtn.addEventListener("touchstart", e => {
-  e.preventDefault();
-  moveLeft = true;
-});
-
-leftBtn.addEventListener("touchend", () => {
-  moveLeft = false;
-});
-
-// RIGHT
-
-const rightBtn = mobileButton("▶", 220, 85);
-
-rightBtn.addEventListener("touchstart", e => {
-  e.preventDefault();
-  moveRight = true;
-});
-
-rightBtn.addEventListener("touchend", () => {
-  moveRight = false;
-});
-
-// JUMP
-
-const jumpBtn = mobileButton("⬆️", window.innerWidth - 120, 60);
-
-jumpBtn.style.borderRadius = "50%";
-
-jumpBtn.addEventListener("touchstart", e => {
-  e.preventDefault();
-  jump();
-});
-
-async function publishCurrentGame() {
-  const name = prompt("Game name?");
-  if (!name) return;
-
-  const blocks = collidableObjects.map(obj => ({
-    x: obj.position.x,
-    y: obj.position.y,
-    z: obj.position.z,
-    width: obj.geometry.parameters.width,
-    height: obj.geometry.parameters.height,
-    depth: obj.geometry.parameters.depth,
-    color: obj.material.color.getHex()
-  }));
-
-  await fetch(API + "/publish", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      name,
-      owner: username,
-      hidden: false,
-      blocks
-    })
-  });
-
-  alert("Published!");
-  loadServerGames();
-}
-
-async function loadServerGames() {
-  const res = await fetch(API + "/games");
-  const games = await res.json();
-
-  document.querySelectorAll(".serverGame,.gameActions").forEach(e => e.remove());
-
-  let y = 170;
-
-  for (const game of games) {
-    const btn = makeButton(game.name, 20, y, 180, 50);
-    btn.className = "serverGame";
-
-    btn.onclick = () => {
-      clearWorld();
-      player.position.set(0, 3, 0);
-
-      for (const b of game.blocks) {
-        collidableObjects.push(
-          createBlock(b.x, b.y, b.z, b.color, b.width, b.height, b.depth)
-        );
-      }
-    };
-
-    const actions = document.createElement("div");
-    actions.className = "gameActions";
-    actions.style.position = "absolute";
-    actions.style.left = "210px";
-    actions.style.top = y + "px";
-    actions.style.display = "none";
-    actions.style.zIndex = 80;
-
-    const hide = document.createElement("button");
-    hide.innerText = "🙈";
-    hide.title = "Hide";
-    actions.appendChild(hide);
-
-    hide.onclick = async () => {
-      await fetch(API + "/hide-game", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: game.name })
-      });
-      loadServerGames();
-    };
-
-    if (game.owner === username) {
-      const remove = document.createElement("button");
-      remove.innerText = "🗑️";
-      remove.title = "Remove";
-      actions.appendChild(remove);
-
-      remove.onclick = async () => {
-        await fetch(API + "/remove-game", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: game.name, owner: username })
-        });
-        loadServerGames();
-      };
-    }
-
-    document.body.appendChild(actions);
-
-    btn.onmouseenter = () => actions.style.display = "block";
-    actions.onmouseenter = () => actions.style.display = "block";
-    btn.onmouseleave = () => setTimeout(() => {
-      if (!actions.matches(":hover")) actions.style.display = "none";
-    }, 200);
-    actions.onmouseleave = () => actions.style.display = "none";
-
-    btn.addEventListener("touchstart", () => {
-      actions.style.display = actions.style.display === "none" ? "block" : "none";
-    });
-
-    y += 60;
   }
-}
+);
 
-loadServerGames();
-setInterval(loadServerGames, 5000);
+upBtn.addEventListener(
+  "touchend",
+  () => {
 
-socket.on("players", players => {
-  for (const id in players) {
-    if (id === socket.id) continue;
+    moveForward = false;
 
-    if (!otherPlayers[id]) {
-      const mesh = new THREE.Mesh(
-        new THREE.BoxGeometry(1, 2, 1),
-        new THREE.MeshStandardMaterial({ color: 0xff0000 })
-      );
-      scene.add(mesh);
-      otherPlayers[id] = mesh;
-    }
-
-    otherPlayers[id].position.set(players[id].x, players[id].y, players[id].z);
-
-    if (players[id].color !== undefined) {
-      otherPlayers[id].material.color.set(players[id].color);
-    }
   }
+);
 
-  for (const id in otherPlayers) {
-    if (!players[id]) {
-      scene.remove(otherPlayers[id]);
-      delete otherPlayers[id];
-    }
+const downBtn =
+  mobileButton(
+    "▼",
+    120,
+    30
+  );
+
+downBtn.addEventListener(
+  "touchstart",
+  e => {
+
+    e.preventDefault();
+
+    moveBackward = true;
+
   }
-});
+);
 
-window.addEventListener("mousedown", event => {
-  if (currentGame !== "sandbox") return;
-  if (document.pointerLockElement !== renderer.domElement) return;
+downBtn.addEventListener(
+  "touchend",
+  () => {
 
-  if (event.button === 0) {
-    const dir = new THREE.Vector3();
-    camera.getWorldDirection(dir);
+    moveBackward = false;
 
-    const block = createBlock(
-      Math.round(player.position.x + dir.x * 3),
-      Math.round(player.position.y),
-      Math.round(player.position.z + dir.z * 3),
-      Math.random() * 0xffffff
+  }
+);
+
+const leftBtn =
+  mobileButton(
+    "◀",
+    20,
+    85
+  );
+
+leftBtn.addEventListener(
+  "touchstart",
+  e => {
+
+    e.preventDefault();
+
+    moveLeft = true;
+
+  }
+);
+
+leftBtn.addEventListener(
+  "touchend",
+  () => {
+
+    moveLeft = false;
+
+  }
+);
+
+const rightBtn =
+  mobileButton(
+    "▶",
+    220,
+    85
+  );
+
+rightBtn.addEventListener(
+  "touchstart",
+  e => {
+
+    e.preventDefault();
+
+    moveRight = true;
+
+  }
+);
+
+rightBtn.addEventListener(
+  "touchend",
+  () => {
+
+    moveRight = false;
+
+  }
+);
+
+const jumpBtn =
+  mobileButton(
+    "⬆️",
+    window.innerWidth - 120,
+    60
+  );
+
+jumpBtn.style.borderRadius =
+  "50%";
+
+jumpBtn.addEventListener(
+  "touchstart",
+  e => {
+
+    e.preventDefault();
+
+    jump();
+
+  }
+);
+
+// ========================================
+// LOGIN
+// ========================================
+
+const login =
+  document.createElement(
+    "div"
+  );
+
+login.style.position =
+  "absolute";
+
+login.style.top =
+  "50%";
+
+login.style.left =
+  "50%";
+
+login.style.transform =
+  "translate(-50%, -50%)";
+
+login.style.background =
+  "rgba(0,0,0,0.85)";
+
+login.style.color =
+  "white";
+
+login.style.padding =
+  "25px";
+
+login.style.borderRadius =
+  "20px";
+
+login.style.textAlign =
+  "center";
+
+login.innerHTML = `
+
+<h1>My Platform</h1>
+
+<input
+id="user"
+placeholder="Username">
+
+<br><br>
+
+<input
+id="pass"
+type="password"
+placeholder="Password">
+
+<br><br>
+
+<button id="loginBtn">
+Login
+</button>
+
+<button id="registerBtn">
+Register
+</button>
+
+<br><br>
+
+<button id="guestBtn">
+Guest
+</button>
+
+`;
+
+document.body.appendChild(
+  login
+);
+
+// ========================================
+// LOGIN BUTTONS
+// ========================================
+
+document.getElementById(
+  "guestBtn"
+).onclick = () => {
+
+  username =
+    "Guest" +
+    Math.floor(
+      Math.random() * 9999
     );
 
-    collidableObjects.push(block);
+  openMenu();
+
+};
+
+document.getElementById(
+  "registerBtn"
+).onclick = async () => {
+
+  const user =
+    document.getElementById(
+      "user"
+    ).value;
+
+  const pass =
+    document.getElementById(
+      "pass"
+    ).value;
+
+  const res =
+    await fetch(
+
+      API + "/register",
+
+      {
+
+        method: "POST",
+
+        headers: {
+
+          "Content-Type":
+            "application/json"
+
+        },
+
+        body: JSON.stringify({
+
+          username: user,
+          password: pass
+
+        })
+
+      }
+
+    );
+
+  alert(
+    await res.text()
+  );
+
+};
+
+document.getElementById(
+  "loginBtn"
+).onclick = async () => {
+
+  const user =
+    document.getElementById(
+      "user"
+    ).value;
+
+  const pass =
+    document.getElementById(
+      "pass"
+    ).value;
+
+  const res =
+    await fetch(
+
+      API + "/login",
+
+      {
+
+        method: "POST",
+
+        headers: {
+
+          "Content-Type":
+            "application/json"
+
+        },
+
+        body: JSON.stringify({
+
+          username: user,
+          password: pass
+
+        })
+
+      }
+
+    );
+
+  if(res.ok) {
+
+    username = user;
+
+    localStorage.setItem(
+      "username",
+      username
+    );
+
+    openMenu();
+
   }
-});
+
+  else {
+
+    alert(
+      await res.text()
+    );
+
+  }
+
+};
+
+// ========================================
+// MENU
+// ========================================
+
+function openMenu() {
+
+  login.remove();
+
+  const menu =
+    document.createElement(
+      "div"
+    );
+
+  menu.style.position =
+    "absolute";
+
+  menu.style.top =
+    "50%";
+
+  menu.style.left =
+    "50%";
+
+  menu.style.transform =
+    "translate(-50%, -50%)";
+
+  menu.style.background =
+    "rgba(0,0,0,0.85)";
+
+  menu.style.color =
+    "white";
+
+  menu.style.padding =
+    "30px";
+
+  menu.style.borderRadius =
+    "20px";
+
+  menu.style.textAlign =
+    "center";
+
+  menu.innerHTML = `
+
+<h1>My Platform</h1>
+
+<h2>Avatar</h2>
+
+<button id="blue">
+Blue
+</button>
+
+<button id="green">
+Green
+</button>
+
+<button id="red">
+Red
+</button>
+
+<br><br>
+
+<h2>Games</h2>
+
+<button id="sandbox">
+Sandbox
+</button>
+
+<button id="obby">
+Obby
+</button>
+
+<button id="race">
+Race
+</button>
+
+<br><br>
+
+<button id="play">
+PLAY
+</button>
+
+`;
+
+  document.body.appendChild(
+    menu
+  );
+
+  document.getElementById(
+    "blue"
+  ).onclick = () => {
+
+    setAvatar(
+      0x0066ff
+    );
+
+  };
+
+  document.getElementById(
+    "green"
+  ).onclick = () => {
+
+    setAvatar(
+      0x00ff00
+    );
+
+  };
+
+  document.getElementById(
+    "red"
+  ).onclick = () => {
+
+    setAvatar(
+      0xff0000
+    );
+
+  };
+
+  document.getElementById(
+    "sandbox"
+  ).onclick = () => {
+
+    currentGame =
+      "sandbox";
+
+  };
+
+  document.getElementById(
+    "obby"
+  ).onclick = () => {
+
+    currentGame =
+      "obby";
+
+  };
+
+  document.getElementById(
+    "race"
+  ).onclick = () => {
+
+    currentGame =
+      "race";
+
+  };
+
+  document.getElementById(
+    "play"
+  ).onclick = () => {
+
+    menu.remove();
+
+    loadGame(
+      currentGame
+    );
+
+  };
+
+}
+
+// ========================================
+// AVATAR
+// ========================================
+
+function setAvatar(
+  color
+) {
+
+  avatarColor =
+    color;
+
+  player.material.color
+  .set(color);
+
+  localStorage.setItem(
+
+    "avatarColor",
+
+    String(color)
+
+  );
+
+}
+
+// ========================================
+// CREATE BLOCK
+// ========================================
+
+function createBlock(
+  x,
+  y,
+  z,
+  color,
+  w = 1,
+  h = 1,
+  d = 1
+) {
+
+  const block =
+    new THREE.Mesh(
+
+      new THREE.BoxGeometry(
+        w,h,d
+      ),
+
+      new THREE.MeshStandardMaterial({
+
+        color
+
+      })
+
+    );
+
+  block.position.set(
+    x,y,z
+  );
+
+  scene.add(block);
+
+  return block;
+
+}
+
+// ========================================
+// LOAD GAME
+// ========================================
+
+function loadGame(
+  game
+) {
+
+  collidableObjects
+  .length = 0;
+
+  if(
+    game === "sandbox"
+  ) {
+
+    player.position.set(
+      0,1,0
+    );
+
+  }
+
+}
+
+// ========================================
+// CAMERA
+// ========================================
 
 function updateCamera() {
-  if (firstPerson) {
-    player.visible = false;
-    camera.position.set(player.position.x, player.position.y + 0.9, player.position.z);
-    camera.rotation.order = "YXZ";
-    camera.rotation.y = yaw;
-    camera.rotation.x = pitch;
-  } else {
-    player.visible = true;
+
+  if(firstPerson) {
+
+    player.visible =
+      false;
 
     camera.position.set(
-      player.position.x + Math.sin(yaw) * Math.cos(pitch) * cameraDistance,
-      player.position.y + Math.sin(pitch) * cameraDistance + 3,
-      player.position.z + Math.cos(yaw) * Math.cos(pitch) * cameraDistance
+
+      player.position.x,
+
+      player.position.y + 0.9,
+
+      player.position.z
+
     );
 
-    camera.lookAt(player.position.x, player.position.y + 1, player.position.z);
+    camera.rotation.order =
+      "YXZ";
+
+    camera.rotation.y =
+      yaw;
+
+    camera.rotation.x =
+      pitch;
+
   }
+
+  else {
+
+    player.visible =
+      true;
+
+    camera.position.set(
+
+      player.position.x +
+      Math.sin(yaw) *
+      cameraDistance,
+
+      player.position.y + 4,
+
+      player.position.z +
+      Math.cos(yaw) *
+      cameraDistance
+
+    );
+
+    camera.lookAt(
+      player.position
+    );
+
+  }
+
 }
 
+// ========================================
+// MULTIPLAYER
+// ========================================
+
+socket.on(
+  "players",
+  players => {
+
+    for(
+      const id in players
+    ) {
+
+      if(
+        id === socket.id
+      ) continue;
+
+      if(
+        !otherPlayers[id]
+      ) {
+
+        const mesh =
+          new THREE.Mesh(
+
+            new THREE.BoxGeometry(
+              1,2,1
+            ),
+
+            new THREE.MeshStandardMaterial({
+
+              color:
+                players[id].color
+
+            })
+
+          );
+
+        scene.add(mesh);
+
+        otherPlayers[id] =
+          mesh;
+
+      }
+
+      otherPlayers[id]
+      .position.set(
+
+        players[id].x,
+
+        players[id].y,
+
+        players[id].z
+
+      );
+
+      otherPlayers[id]
+      .material.color
+      .set(
+
+        players[id].color
+
+      );
+
+    }
+
+  }
+);
+
+// ========================================
+// ANIMATE
+// ========================================
+
 function animate() {
-  requestAnimationFrame(animate);
+
+  requestAnimationFrame(
+    animate
+  );
 
   let moveX = 0;
   let moveZ = 0;
+
   const speed = 0.12;
 
-  const forwardX = Math.sin(yaw);
-  const forwardZ = Math.cos(yaw);
-  const rightX = Math.cos(yaw);
-  const rightZ = -Math.sin(yaw);
+  const forwardX =
+    Math.sin(yaw);
 
-  if (keys.w) {
-    moveX -= forwardX * speed;
-    moveZ -= forwardZ * speed;
+  const forwardZ =
+    Math.cos(yaw);
+
+  const rightX =
+    Math.cos(yaw);
+
+  const rightZ =
+    -Math.sin(yaw);
+
+  if(
+    keys.w ||
+    moveForward
+  ) {
+
+    moveX -=
+      forwardX * speed;
+
+    moveZ -=
+      forwardZ * speed;
+
   }
 
-  if (keys.s) {
-    moveX += forwardX * speed;
-    moveZ += forwardZ * speed;
+  if(
+    keys.s ||
+    moveBackward
+  ) {
+
+    moveX +=
+      forwardX * speed;
+
+    moveZ +=
+      forwardZ * speed;
+
   }
 
-  if (keys.a) {
-    moveX -= rightX * speed;
-    moveZ -= rightZ * speed;
+  if(
+    keys.a ||
+    moveLeft
+  ) {
+
+    moveX -=
+      rightX * speed;
+
+    moveZ -=
+      rightZ * speed;
+
   }
 
-  if (keys.d) {
-    moveX += rightX * speed;
-    moveZ += rightZ * speed;
+  if(
+    keys.d ||
+    moveRight
+  ) {
+
+    moveX +=
+      rightX * speed;
+
+    moveZ +=
+      rightZ * speed;
+
   }
 
-  const oldX = player.position.x;
-  const oldZ = player.position.z;
+  player.position.x +=
+    moveX;
 
-  player.position.x += moveX;
-  player.position.z += moveZ;
+  player.position.z +=
+    moveZ;
 
   velocityY -= gravity;
-  player.position.y += velocityY;
 
-  if (player.position.y <= 1) {
-    player.position.y = 1;
+  player.position.y +=
+    velocityY;
+
+  if(
+    player.position.y <= 1
+  ) {
+
+    player.position.y =
+      1;
+
     velocityY = 0;
+
     isGrounded = true;
-  }
 
-  for (const obj of collidableObjects) {
-    const objBox = new THREE.Box3().setFromObject(obj);
-
-    const playerBox = new THREE.Box3(
-      new THREE.Vector3(player.position.x - 0.4, player.position.y - 1, player.position.z - 0.4),
-      new THREE.Vector3(player.position.x + 0.4, player.position.y + 1, player.position.z + 0.4)
-    );
-
-    if (playerBox.intersectsBox(objBox)) {
-      player.position.x = oldX;
-      player.position.z = oldZ;
-    }
   }
 
   updateCamera();
 
-  socket.emit("move", {
-    x: player.position.x,
-    y: player.position.y,
-    z: player.position.z,
-    color: avatarColor,
-    username
-  });
+  socket.emit(
+    "move",
+    {
 
-  renderer.render(scene, camera);
+      x:
+        player.position.x,
+
+      y:
+        player.position.y,
+
+      z:
+        player.position.z,
+
+      color:
+        avatarColor,
+
+      username
+
+    }
+  );
+
+  renderer.render(
+    scene,
+    camera
+  );
+
 }
 
 animate();
-
-window.addEventListener("resize", () => {
-  camera.aspect = innerWidth / innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(innerWidth, innerHeight);
-});
