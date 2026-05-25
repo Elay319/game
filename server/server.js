@@ -102,7 +102,43 @@ app.post('/hide-game', (req, res) => {
 
   res.send('Game hidden');
 });
+const usersFile = path.join(__dirname, "users.json");
 
+if (!fs.existsSync(usersFile)) {
+  fs.writeFileSync(usersFile, "{}");
+}
+
+app.post("/register", (req, res) => {
+  const { username, password } = req.body;
+
+  if (!username || !password) {
+    return res.status(400).send("Missing username or password");
+  }
+
+  const users = JSON.parse(fs.readFileSync(usersFile));
+
+  if (users[username]) {
+    return res.status(400).send("Username already exists");
+  }
+
+  users[username] = { password };
+
+  fs.writeFileSync(usersFile, JSON.stringify(users, null, 2));
+
+  res.send("Registered!");
+});
+
+app.post("/login", (req, res) => {
+  const { username, password } = req.body;
+
+  const users = JSON.parse(fs.readFileSync(usersFile));
+
+  if (!users[username] || users[username].password !== password) {
+    return res.status(401).send("Wrong username or password");
+  }
+
+  res.send("Logged in!");
+});
 // MULTIPLAYER
 
 const players = {};
