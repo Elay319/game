@@ -1,21 +1,44 @@
+// ========================================
+// CONFIG
+// ========================================
 const API = "https://game-euks.onrender.com";
 const socket = io(API);
 
+// ========================================
+// ACCOUNT / AVATAR
+// ========================================
 let username = localStorage.getItem("username") || "";
 let avatarColor = Number(localStorage.getItem("avatarColor")) || 0x0066ff;
 
+// ========================================
+// PAGE SAFETY
+// ========================================
 document.addEventListener("contextmenu", e => e.preventDefault());
+window.addEventListener("keydown", e => {
+  if (e.code === "Space") e.preventDefault();
+});
 
+// ========================================
+// THREE.JS SETUP
+// ========================================
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x87ceeb);
 
-const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 1000);
+const camera = new THREE.PerspectiveCamera(
+  75,
+  window.innerWidth / window.innerHeight,
+  0.1,
+  1000
+);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize(innerWidth, innerHeight);
+renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 document.body.appendChild(renderer.domElement);
 
+// ========================================
+// LIGHTS
+// ========================================
 scene.add(new THREE.AmbientLight(0xffffff, 0.45));
 
 const sun = new THREE.DirectionalLight(0xffffff, 1);
@@ -23,6 +46,9 @@ sun.position.set(10, 20, 10);
 sun.castShadow = true;
 scene.add(sun);
 
+// ========================================
+// GROUND
+// ========================================
 const ground = new THREE.Mesh(
   new THREE.PlaneGeometry(200, 200),
   new THREE.MeshStandardMaterial({ color: 0x55aa55 })
@@ -31,6 +57,9 @@ ground.rotation.x = -Math.PI / 2;
 ground.receiveShadow = true;
 scene.add(ground);
 
+// ========================================
+// PLAYER
+// ========================================
 const player = new THREE.Mesh(
   new THREE.BoxGeometry(1, 2, 1),
   new THREE.MeshStandardMaterial({ color: avatarColor })
@@ -39,6 +68,9 @@ player.position.set(0, 1, 0);
 player.castShadow = true;
 scene.add(player);
 
+// ========================================
+// STATE
+// ========================================
 const collidableObjects = [];
 const otherPlayers = {};
 const keys = {};
@@ -60,6 +92,23 @@ const gravity = 0.015;
 const jumpPower = 0.28;
 const cameraDistance = 8;
 
+// ========================================
+// UI HELPERS
+// ========================================
+function stylePanel(panel) {
+  panel.style.position = "absolute";
+  panel.style.top = "50%";
+  panel.style.left = "50%";
+  panel.style.transform = "translate(-50%, -50%)";
+  panel.style.background = "rgba(0,0,0,0.85)";
+  panel.style.color = "white";
+  panel.style.padding = "30px";
+  panel.style.borderRadius = "20px";
+  panel.style.fontFamily = "Arial";
+  panel.style.textAlign = "center";
+  panel.style.zIndex = "100";
+}
+
 function makeButton(text, left, top, width, height) {
   const btn = document.createElement("button");
   btn.innerText = text;
@@ -71,7 +120,7 @@ function makeButton(text, left, top, width, height) {
   btn.style.borderRadius = "15px";
   btn.style.border = "none";
   btn.style.fontSize = "18px";
-  btn.style.zIndex = "50";
+  btn.style.zIndex = "60";
   btn.style.cursor = "pointer";
   document.body.appendChild(btn);
   return btn;
@@ -94,6 +143,41 @@ function mobileButton(text, left, bottom) {
   return btn;
 }
 
+// ========================================
+// MOBILE CONTROLS
+// ========================================
+const upBtn = mobileButton("▲", 120, 140);
+upBtn.ontouchstart = e => { e.preventDefault(); moveForward = true; };
+upBtn.ontouchend = () => moveForward = false;
+upBtn.onmousedown = () => moveForward = true;
+upBtn.onmouseup = () => moveForward = false;
+
+const downBtn = mobileButton("▼", 120, 30);
+downBtn.ontouchstart = e => { e.preventDefault(); moveBackward = true; };
+downBtn.ontouchend = () => moveBackward = false;
+downBtn.onmousedown = () => moveBackward = true;
+downBtn.onmouseup = () => moveBackward = false;
+
+const leftBtn = mobileButton("◀", 20, 85);
+leftBtn.ontouchstart = e => { e.preventDefault(); moveLeft = true; };
+leftBtn.ontouchend = () => moveLeft = false;
+leftBtn.onmousedown = () => moveLeft = true;
+leftBtn.onmouseup = () => moveLeft = false;
+
+const rightBtn = mobileButton("▶", 220, 85);
+rightBtn.ontouchstart = e => { e.preventDefault(); moveRight = true; };
+rightBtn.ontouchend = () => moveRight = false;
+rightBtn.onmousedown = () => moveRight = true;
+rightBtn.onmouseup = () => moveRight = false;
+
+const jumpBtn = mobileButton("⬆️", window.innerWidth - 120, 60);
+jumpBtn.style.borderRadius = "50%";
+jumpBtn.ontouchstart = e => { e.preventDefault(); jump(); };
+jumpBtn.onclick = () => jump();
+
+// ========================================
+// WORLD FUNCTIONS
+// ========================================
 function createBlock(x, y, z, color, w = 1, h = 1, d = 1) {
   const block = new THREE.Mesh(
     new THREE.BoxGeometry(w, h, d),
@@ -127,6 +211,7 @@ function clearWorld() {
 
 function loadGame(game) {
   clearWorld();
+  currentGame = game;
 
   if (game === "sandbox") {
     player.position.set(0, 1, 0);
@@ -159,6 +244,9 @@ function jump() {
   }
 }
 
+// ========================================
+// KEYBOARD + CAMERA LOOK
+// ========================================
 document.addEventListener("keydown", e => {
   keys[e.key.toLowerCase()] = true;
 
@@ -192,16 +280,19 @@ let lastTouchX = 0;
 let lastTouchY = 0;
 
 document.addEventListener("touchstart", e => {
+  if (!e.touches[0]) return;
   lastTouchX = e.touches[0].clientX;
   lastTouchY = e.touches[0].clientY;
 });
 
 document.addEventListener("touchmove", e => {
+  if (!e.touches[0]) return;
+
   const touch = e.touches[0];
   const dx = touch.clientX - lastTouchX;
   const dy = touch.clientY - lastTouchY;
 
-  if (touch.clientX > innerWidth / 2) {
+  if (touch.clientX > window.innerWidth / 2) {
     yaw -= dx * 0.01;
     pitch -= dy * 0.01;
     pitch = Math.max(-1.4, Math.min(1.4, pitch));
@@ -211,26 +302,72 @@ document.addEventListener("touchmove", e => {
   lastTouchY = touch.clientY;
 });
 
-const upBtn = mobileButton("▲", 120, 140);
-upBtn.ontouchstart = e => { e.preventDefault(); moveForward = true; };
-upBtn.ontouchend = () => moveForward = false;
+// ========================================
+// LOGIN / REGISTER
+// ========================================
+const loginBox = document.createElement("div");
+stylePanel(loginBox);
+loginBox.innerHTML = `
+  <h1>My Platform</h1>
+  <input id="userInput" placeholder="Username" style="font-size:18px"><br><br>
+  <input id="passInput" placeholder="Password" type="password" style="font-size:18px"><br><br>
+  <button id="loginBtn">Login</button>
+  <button id="registerBtn">Register</button>
+  <br><br>
+  <button id="guestBtn">Play Guest</button>
+`;
+document.body.appendChild(loginBox);
 
-const downBtn = mobileButton("▼", 120, 30);
-downBtn.ontouchstart = e => { e.preventDefault(); moveBackward = true; };
-downBtn.ontouchend = () => moveBackward = false;
+function closeLoginAndOpenMenu() {
+  loginBox.style.display = "none";
+  openMenu();
+}
 
-const leftBtn = mobileButton("◀", 20, 85);
-leftBtn.ontouchstart = e => { e.preventDefault(); moveLeft = true; };
-leftBtn.ontouchend = () => moveLeft = false;
+document.getElementById("guestBtn").onclick = () => {
+  username = "Guest" + Math.floor(Math.random() * 9999);
+  closeLoginAndOpenMenu();
+};
 
-const rightBtn = mobileButton("▶", 220, 85);
-rightBtn.ontouchstart = e => { e.preventDefault(); moveRight = true; };
-rightBtn.ontouchend = () => moveRight = false;
+document.getElementById("registerBtn").onclick = async () => {
+  const user = document.getElementById("userInput").value.trim();
+  const pass = document.getElementById("passInput").value;
 
-const jumpBtn = mobileButton("⬆️", innerWidth - 120, 60);
-jumpBtn.style.borderRadius = "50%";
-jumpBtn.ontouchstart = e => { e.preventDefault(); jump(); };
+  if (!user || !pass) {
+    alert("Type username and password");
+    return;
+  }
 
+  const res = await fetch(API + "/register", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username: user, password: pass })
+  });
+
+  alert(await res.text());
+};
+
+document.getElementById("loginBtn").onclick = async () => {
+  const user = document.getElementById("userInput").value.trim();
+  const pass = document.getElementById("passInput").value;
+
+  const res = await fetch(API + "/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username: user, password: pass })
+  });
+
+  if (res.ok) {
+    username = user;
+    localStorage.setItem("username", username);
+    closeLoginAndOpenMenu();
+  } else {
+    alert(await res.text());
+  }
+};
+
+// ========================================
+// MAIN MENU
+// ========================================
 function setAvatar(color) {
   avatarColor = color;
   player.material.color.set(color);
@@ -238,65 +375,29 @@ function setAvatar(color) {
   socket.emit("avatar", { username, color });
 }
 
-const loginBox = document.createElement("div");
-loginBox.style.position = "absolute";
-loginBox.style.top = "50%";
-loginBox.style.left = "50%";
-loginBox.style.transform = "translate(-50%, -50%)";
-loginBox.style.background = "rgba(0,0,0,0.85)";
-loginBox.style.color = "white";
-loginBox.style.padding = "30px";
-loginBox.style.borderRadius = "20px";
-loginBox.style.fontFamily = "Arial";
-loginBox.style.textAlign = "center";
-loginBox.style.zIndex = "100";
-
-loginBox.innerHTML = `
-<h1>My Platform</h1>
-<input id="userInput" placeholder="Username"><br><br>
-<input id="passInput" placeholder="Password" type="password"><br><br>
-<button id="loginBtn">Login</button>
-<button id="registerBtn">Register</button>
-<br><br>
-<button id="guestBtn">Play Guest</button>
-`;
-
-document.body.appendChild(loginBox);
-
 function openMenu() {
-  loginBox.style.display = "none";
-
   const menu = document.createElement("div");
-  menu.style.position = "absolute";
-  menu.style.top = "50%";
-  menu.style.left = "50%";
-  menu.style.transform = "translate(-50%, -50%)";
-  menu.style.background = "rgba(0,0,0,0.85)";
-  menu.style.color = "white";
-  menu.style.padding = "30px";
-  menu.style.borderRadius = "20px";
-  menu.style.fontFamily = "Arial";
-  menu.style.textAlign = "center";
-  menu.style.zIndex = "70";
+  stylePanel(menu);
+  menu.style.zIndex = "90";
 
   menu.innerHTML = `
-  <h1>My Platform</h1>
+    <h1>My Platform</h1>
 
-  <h2>Avatar</h2>
-  <button id="blueAvatar">Blue</button>
-  <button id="greenAvatar">Green</button>
-  <button id="redAvatar">Red</button>
+    <h2>Avatar</h2>
+    <button id="blueAvatar">Blue</button>
+    <button id="greenAvatar">Green</button>
+    <button id="redAvatar">Red</button>
 
-  <br><br>
+    <br><br>
 
-  <h2>Games</h2>
-  <button id="sandboxBtn">Sandbox</button>
-  <button id="obbyBtn">Obby</button>
-  <button id="raceBtn">Race</button>
+    <h2>Games</h2>
+    <button id="sandboxBtn">Sandbox</button>
+    <button id="obbyBtn">Obby</button>
+    <button id="raceBtn">Race</button>
 
-  <br><br>
+    <br><br>
 
-  <button id="playBtn">PLAY</button>
+    <button id="playBtn">PLAY</button>
   `;
 
   document.body.appendChild(menu);
@@ -315,52 +416,22 @@ function openMenu() {
   };
 }
 
-document.getElementById("guestBtn").onclick = () => {
-  username = "Guest" + Math.floor(Math.random() * 9999);
-  openMenu();
-};
-
-document.getElementById("registerBtn").onclick = async () => {
-  const user = document.getElementById("userInput").value;
-  const pass = document.getElementById("passInput").value;
-
-  const res = await fetch(API + "/register", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username: user, password: pass })
-  });
-
-  alert(await res.text());
-};
-
-document.getElementById("loginBtn").onclick = async () => {
-  const user = document.getElementById("userInput").value;
-  const pass = document.getElementById("passInput").value;
-
-  const res = await fetch(API + "/login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username: user, password: pass })
-  });
-
-  if (res.ok) {
-    username = user;
-    localStorage.setItem("username", username);
-    openMenu();
-  } else {
-    alert(await res.text());
-  }
-};
-
 if (username) {
+  loginBox.style.display = "none";
   openMenu();
 }
 
-makeButton("PUBLISH", innerWidth - 140, 20, 120, 55).onclick = publishCurrentGame;
-makeButton("VIEW", innerWidth - 140, 85, 120, 55).onclick = () => {
+// ========================================
+// TOP BUTTONS
+// ========================================
+makeButton("PUBLISH", window.innerWidth - 140, 20, 120, 55).onclick = publishCurrentGame;
+makeButton("VIEW", window.innerWidth - 140, 85, 120, 55).onclick = () => {
   firstPerson = !firstPerson;
 };
 
+// ========================================
+// PUBLISH
+// ========================================
 async function publishCurrentGame() {
   const name = prompt("Game name?");
   if (!name) return;
@@ -390,6 +461,9 @@ async function publishCurrentGame() {
   loadServerGames();
 }
 
+// ========================================
+// SERVER GAME LIST WITH HOLD ACTIONS
+// ========================================
 async function loadServerGames() {
   const res = await fetch(API + "/games");
   const games = await res.json();
@@ -402,8 +476,9 @@ async function loadServerGames() {
     const btn = makeButton(game.name, 20, y, 180, 50);
     btn.className = "serverGame";
 
-    btn.onclick = () => {
+    const joinGame = () => {
       clearWorld();
+      currentGame = "published";
       player.position.set(0, 3, 0);
 
       for (const block of game.blocks) {
@@ -421,20 +496,27 @@ async function loadServerGames() {
       }
     };
 
+    btn.onclick = joinGame;
+
     const actions = document.createElement("div");
     actions.className = "gameActions";
     actions.style.position = "absolute";
     actions.style.left = "210px";
     actions.style.top = y + "px";
     actions.style.display = "none";
-    actions.style.zIndex = "100";
+    actions.style.zIndex = "120";
+    actions.style.gap = "5px";
 
     const hide = document.createElement("button");
     hide.innerText = "🙈";
     hide.title = "Hide";
+    hide.style.width = "45px";
+    hide.style.height = "50px";
     actions.appendChild(hide);
 
-    hide.onclick = async () => {
+    hide.onclick = async e => {
+      e.stopPropagation();
+
       await fetch(API + "/hide-game", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -448,9 +530,13 @@ async function loadServerGames() {
       const remove = document.createElement("button");
       remove.innerText = "🗑️";
       remove.title = "Remove";
+      remove.style.width = "45px";
+      remove.style.height = "50px";
       actions.appendChild(remove);
 
-      remove.onclick = async () => {
+      remove.onclick = async e => {
+        e.stopPropagation();
+
         await fetch(API + "/remove-game", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -466,22 +552,39 @@ async function loadServerGames() {
 
     document.body.appendChild(actions);
 
+    // PC hover shows actions.
     btn.onmouseenter = () => actions.style.display = "block";
     actions.onmouseenter = () => actions.style.display = "block";
-
     btn.onmouseleave = () => {
       setTimeout(() => {
-        if (!actions.matches(":hover")) {
-          actions.style.display = "none";
-        }
+        if (!actions.matches(":hover")) actions.style.display = "none";
       }, 200);
     };
-
     actions.onmouseleave = () => actions.style.display = "none";
 
-    btn.addEventListener("touchstart", e => {
-      e.preventDefault();
-      actions.style.display = actions.style.display === "none" ? "block" : "none";
+    // PHONE: tap joins, hold shows actions.
+    let holdTimer = null;
+    let didHold = false;
+
+    btn.addEventListener("touchstart", () => {
+      didHold = false;
+      holdTimer = setTimeout(() => {
+        didHold = true;
+        actions.style.display = "block";
+      }, 600);
+    });
+
+    btn.addEventListener("touchend", e => {
+      clearTimeout(holdTimer);
+
+      if (!didHold) {
+        e.preventDefault();
+        joinGame();
+      }
+    });
+
+    btn.addEventListener("touchcancel", () => {
+      clearTimeout(holdTimer);
     });
 
     y += 60;
@@ -491,6 +594,9 @@ async function loadServerGames() {
 loadServerGames();
 setInterval(loadServerGames, 5000);
 
+// ========================================
+// BUILDING
+// ========================================
 window.addEventListener("mousedown", event => {
   if (currentGame !== "sandbox") return;
   if (document.pointerLockElement !== renderer.domElement) return;
@@ -511,7 +617,6 @@ window.addEventListener("mousedown", event => {
 
   if (event.button === 2) {
     raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
-
     const hits = raycaster.intersectObjects(collidableObjects);
 
     if (hits.length > 0) {
@@ -524,6 +629,9 @@ window.addEventListener("mousedown", event => {
   }
 });
 
+// ========================================
+// MULTIPLAYER
+// ========================================
 socket.on("players", players => {
   for (const id in players) {
     if (id === socket.id) continue;
@@ -531,9 +639,7 @@ socket.on("players", players => {
     if (!otherPlayers[id]) {
       const mesh = new THREE.Mesh(
         new THREE.BoxGeometry(1, 2, 1),
-        new THREE.MeshStandardMaterial({
-          color: players[id].color || 0xff0000
-        })
+        new THREE.MeshStandardMaterial({ color: players[id].color || 0xff0000 })
       );
 
       scene.add(mesh);
@@ -555,6 +661,9 @@ socket.on("players", players => {
   }
 });
 
+// ========================================
+// CAMERA
+// ========================================
 function updateCamera() {
   if (firstPerson) {
     player.visible = false;
@@ -581,6 +690,9 @@ function updateCamera() {
   }
 }
 
+// ========================================
+// GAME LOOP
+// ========================================
 function animate() {
   requestAnimationFrame(animate);
 
@@ -675,8 +787,11 @@ function animate() {
 
 animate();
 
+// ========================================
+// RESIZE
+// ========================================
 window.addEventListener("resize", () => {
-  camera.aspect = innerWidth / innerHeight;
+  camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
-  renderer.setSize(innerWidth, innerHeight);
+  renderer.setSize(window.innerWidth, window.innerHeight);
 });
