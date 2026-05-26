@@ -496,8 +496,6 @@ async function loadServerGames() {
       }
     };
 
-    btn.onclick = joinGame;
-
     const actions = document.createElement("div");
     actions.className = "gameActions";
     actions.style.position = "absolute";
@@ -552,40 +550,51 @@ async function loadServerGames() {
 
     document.body.appendChild(actions);
 
-    // PC hover shows actions.
-    btn.onmouseenter = () => actions.style.display = "block";
+    // Keep panel open while clicking action buttons
     actions.onmouseenter = () => actions.style.display = "block";
-    btn.onmouseleave = () => {
-      setTimeout(() => {
-        if (!actions.matches(":hover")) actions.style.display = "none";
-      }, 200);
-    };
     actions.onmouseleave = () => actions.style.display = "none";
 
-    // PHONE: tap joins, hold shows actions.
+    // HOLD TO EDIT / CLICK TO JOIN SYSTEM (PC & Mobile unified)
     let holdTimer = null;
     let didHold = false;
 
-    btn.addEventListener("touchstart", () => {
+    const startHold = () => {
       didHold = false;
       holdTimer = setTimeout(() => {
         didHold = true;
         actions.style.display = "block";
-      }, 600);
-    });
+      }, 600); // 600 milliseconds hold threshold
+    };
 
-    btn.addEventListener("touchend", e => {
+    const endHold = (e) => {
       clearTimeout(holdTimer);
-
       if (!didHold) {
-        e.preventDefault();
         joinGame();
       }
-    });
+    };
 
-    btn.addEventListener("touchcancel", () => {
+    const cancelHold = () => {
       clearTimeout(holdTimer);
+    };
+
+    // Mouse Controls
+    btn.addEventListener("mousedown", (e) => {
+      if (e.button === 0) startHold();
     });
+    btn.addEventListener("mouseup", (e) => {
+      if (e.button === 0) endHold(e);
+    });
+    btn.addEventListener("mouseleave", cancelHold);
+
+    // Touch Controls
+    btn.addEventListener("touchstart", (e) => {
+      startHold();
+    });
+    btn.addEventListener("touchend", (e) => {
+      e.preventDefault(); // Prevents ghost click bubbles on mobile
+      endHold(e);
+    });
+    btn.addEventListener("touchcancel", cancelHold);
 
     y += 60;
   }
