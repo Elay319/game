@@ -1,17 +1,36 @@
 // ========================================
-// SERVER GAME LIST WITH HOLD ACTIONS
+// SERVER GAME LIST WITH HOLD ACTIONS (FIXED & UNIFIED)
 // ========================================
 async function loadServerGames() {
   const res = await fetch(API + "/games");
   const games = await res.json();
 
-  document.querySelectorAll(".serverGame,.gameActions").forEach(e => e.remove());
+  // Clean up all components of the old menu rows
+  document.querySelectorAll(".serverGameRow, .serverGame, .gameActions").forEach(e => e.remove());
 
   let y = 170;
 
   for (const game of games) {
-    const btn = makeButton(game.name, 20, y, 180, 50);
+    // 1. Create a unified container for this menu row item
+    const rowWrapper = document.createElement("div");
+    rowWrapper.className = "serverGameRow";
+    rowWrapper.style.position = "absolute";
+    rowWrapper.style.left = "20px";
+    rowWrapper.style.top = y + "px";
+    rowWrapper.style.height = "50px";
+    rowWrapper.style.display = "flex";
+    rowWrapper.style.alignItems = "center";
+    rowWrapper.style.gap = "5px"; // Glues the buttons and actions into one giant menu feel
+    rowWrapper.style.zIndex = "100";
+    document.body.appendChild(rowWrapper);
+
+    // 2. Use your custom engine button function, but append it into our menu wrapper
+    const btn = makeButton(game.name, 0, 0, 180, 50); 
     btn.className = "serverGame";
+    btn.style.position = "relative"; // Break out of absolute drift inside the row wrapper
+    btn.style.left = "0px";
+    btn.style.top = "0px";
+    rowWrapper.appendChild(btn);
 
     const joinGame = () => {
       clearWorld();
@@ -33,13 +52,11 @@ async function loadServerGames() {
       }
     };
 
+    // 3. Setup actions controls inside the same row menu layout
     const actions = document.createElement("div");
     actions.className = "gameActions";
-    actions.style.position = "absolute";
-    actions.style.left = "210px";
-    actions.style.top = y + "px";
-    actions.style.display = "none";
-    actions.style.zIndex = "120";
+    actions.style.display = "none"; // Kept hidden until summoned by hold or hover
+    actions.style.alignItems = "center";
     actions.style.gap = "5px";
 
     const hide = document.createElement("button");
@@ -47,6 +64,7 @@ async function loadServerGames() {
     hide.title = "Hide";
     hide.style.width = "45px";
     hide.style.height = "50px";
+    hide.style.cursor = "pointer";
     actions.appendChild(hide);
 
     hide.onclick = async e => {
@@ -67,6 +85,7 @@ async function loadServerGames() {
       remove.title = "Remove";
       remove.style.width = "45px";
       remove.style.height = "50px";
+      remove.style.cursor = "pointer";
       actions.appendChild(remove);
 
       remove.onclick = async e => {
@@ -85,10 +104,10 @@ async function loadServerGames() {
       };
     }
 
-    document.body.appendChild(actions);
+    rowWrapper.appendChild(actions);
 
     // Keep actions panel open if interacting with it
-    actions.onmouseenter = () => actions.style.display = "block";
+    actions.onmouseenter = () => actions.style.display = "flex";
     actions.onmouseleave = () => actions.style.display = "none";
 
     // HOLD TO EDIT / CLICK TO JOIN SYSTEM (PC & Mobile unified)
@@ -99,14 +118,13 @@ async function loadServerGames() {
       didHold = false;
       holdTimer = setTimeout(() => {
         didHold = true;
-        actions.style.display = "block";
+        actions.style.display = "flex"; // Changed from 'block' to matches flex alignment
       }, 600); // 600ms hold time
     };
 
     const endHold = (e) => {
       clearTimeout(holdTimer);
       if (!didHold) {
-        // If they didn't hold, it counts as a standard press/click
         joinGame();
       }
     };
@@ -117,7 +135,7 @@ async function loadServerGames() {
 
     // Mouse Listeners
     btn.addEventListener("mousedown", (e) => {
-      if (e.button === 0) startHold(); // Left click only
+      if (e.button === 0) startHold(); 
     });
     btn.addEventListener("mouseup", (e) => {
       if (e.button === 0) endHold(e);
@@ -129,11 +147,12 @@ async function loadServerGames() {
       startHold();
     });
     btn.addEventListener("touchend", (e) => {
-      e.preventDefault(); // Prevents simulated mouse clicks on mobile
+      e.preventDefault(); 
       endHold(e);
     });
     btn.addEventListener("touchcancel", cancelHold);
 
+    // Increments the giant vertical list layout
     y += 60;
   }
 }
